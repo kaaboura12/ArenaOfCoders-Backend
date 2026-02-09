@@ -1,6 +1,7 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '@prisma/client';
+import type { UpdateProfileDto } from './dto/update-profile.dto';
 
 export interface CreateUserInput {
   email: string;
@@ -9,6 +10,24 @@ export interface CreateUserInput {
   lastName: string;
   role?: UserRole;
 }
+
+const PROFILE_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  avatarUrl: true,
+  role: true,
+  isEmailVerified: true,
+  mainSpecialty: true,
+  skillTags: true,
+  totalChallenges: true,
+  totalWins: true,
+  walletBalance: true,
+  isBanned: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
 
 @Injectable()
 export class UserService {
@@ -23,23 +42,35 @@ export class UserService {
   async findById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        avatarUrl: true,
-        role: true,
-        isEmailVerified: true,
-        mainSpecialty: true,
-        skillTags: true,
-        totalChallenges: true,
-        totalWins: true,
-        walletBalance: true,
-        isBanned: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: PROFILE_SELECT,
+    });
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    const data = {
+      ...(dto.firstName !== undefined && { firstName: dto.firstName.trim() }),
+      ...(dto.lastName !== undefined && { lastName: dto.lastName.trim() }),
+      ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+      ...(dto.mainSpecialty !== undefined && { mainSpecialty: dto.mainSpecialty }),
+      ...(dto.skillTags !== undefined && { skillTags: dto.skillTags }),
+    };
+
+    if (Object.keys(data).length === 0) {
+      return this.findById(userId);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: PROFILE_SELECT,
     });
   }
 

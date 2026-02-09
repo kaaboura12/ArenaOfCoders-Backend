@@ -12,6 +12,7 @@ import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { AuthTokens, AuthUser, JwtPayload } from './auth.types';
 import { UserRole } from '@prisma/client';
+import type { UpdateProfileDto } from '../user/dto/update-profile.dto';
 
 const SALT_ROUNDS = 12;
 
@@ -139,5 +140,9 @@ export class AuthService {
       user.email,
       user.firstName,
     );
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    return this.userService.updateProfile(userId, dto);
   }
 }

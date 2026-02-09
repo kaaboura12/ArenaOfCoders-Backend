@@ -15,13 +15,13 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Arena of Coders API')
-    .setDescription('API for Arena of Coders – auth and more')
+    .setDescription('API for Arena of Coders – auth, profile, and more')
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
       'access-token',
     )
-    .addTag('auth', 'Sign up, sign in, and current user')
+    .addTag('auth', 'Sign up, sign in, email verification, and profile (me, update profile)')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
