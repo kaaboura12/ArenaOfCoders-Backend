@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
+import { EmailVerificationService } from '../email-verification/email-verification.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { AuthTokens, AuthUser, JwtPayload } from './auth.types';
@@ -22,6 +23,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly emailVerificationService: EmailVerificationService,
   ) {
     this.jwtExpiresIn =
       this.config.get<string>('JWT_EXPIRES_IN', '7d');
@@ -36,6 +38,13 @@ export class AuthService {
       lastName: dto.lastName.trim(),
       role: UserRole.USER,
     });
+    
+    // Send verification code via email
+    await this.emailVerificationService.sendVerificationCode(
+      user.email,
+      user.firstName,
+    );
+    
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -112,5 +121,23 @@ export class AuthService {
       d: 86400,
     };
     return value * (multipliers[unit] ?? 86400);
+  }
+
+  async verifyEmail(email: string, code: string): Promise<void> {
+    await this.emailVerificationService.verifyCode(email, code);
+  }
+
+  async resendVerificationCode(email: string): Promise<void> {
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+    await this.emailVerificationService.sendVerificationCode(
+      user.email,
+      user.firstName,
+    );
   }
 }

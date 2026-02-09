@@ -78,3 +78,14 @@ model User {
   @@index([role])
   @@index([mainSpecialty])
 }
+
+model EmailVerification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  code      String   // 6-digit verification code
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([code])
+}

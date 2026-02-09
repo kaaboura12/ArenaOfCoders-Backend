@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { EmailVerificationModule } from '../email-verification/email-verification.module';
 
 function parseExpiresInToSeconds(expiresIn: string): number {
   const match = expiresIn.match(/^(\d+)([smhd])$/);
@@ -24,6 +25,7 @@ function parseExpiresInToSeconds(expiresIn: string): number {
 @Module({
   imports: [
     UserModule,
+    EmailVerificationModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

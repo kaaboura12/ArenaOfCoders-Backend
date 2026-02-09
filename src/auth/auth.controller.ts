@@ -16,6 +16,8 @@ import {
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { User } from '@prisma/client';
@@ -41,6 +43,26 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid email or password' })
   async signIn(@Body() dto: SignInDto) {
     return this.authService.signIn(dto);
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email with 6-digit code' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired code' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.authService.verifyEmail(dto.email, dto.code);
+    return { message: 'Email verified successfully' };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend verification code to email' })
+  @ApiResponse({ status: 200, description: 'Verification code sent' })
+  @ApiResponse({ status: 400, description: 'User not found or already verified' })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    await this.authService.resendVerificationCode(dto.email);
+    return { message: 'Verification code sent successfully' };
   }
 
   @Get('me')
