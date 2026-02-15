@@ -36,12 +36,49 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
-  @ApiOperation({ summary: 'Register a new user' })
+  @UseInterceptors(
+    FileInterceptor('resume', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!file?.originalname?.toLowerCase().endsWith('.docx')) {
+          return cb(
+            new BadRequestException('Resume must be a .docx file'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Register a new user with resume',
+    description: 'Sign up with email, password, name, and a .docx resume. CV extraction sets mainSpecialty and skillTags from the resume.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['email', 'password', 'firstName', 'lastName', 'resume'],
+      properties: {
+        email: { type: 'string', example: 'user@example.com' },
+        password: { type: 'string', example: 'secret1234', minLength: 8 },
+        firstName: { type: 'string', example: 'Jane' },
+        lastName: { type: 'string', example: 'Doe' },
+        resume: { type: 'string', format: 'binary', description: 'Resume .docx (required, max 5MB)' },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: 'User created and tokens returned' })
-  @ApiResponse({ status: 400, description: 'Validation error or invalid body' })
+  @ApiResponse({ status: 400, description: 'Validation error or missing/invalid resume' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
-  async signUp(@Body() dto: SignUpDto) {
-    return this.authService.signUp(dto);
+  async signUp(
+    @Body() dto: SignUpDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file?.buffer) {
+      throw new BadRequestException('Resume file (.docx) is required');
+    }
+    return this.authService.signUp(dto, file.buffer);
   }
 
   @Post('signin')

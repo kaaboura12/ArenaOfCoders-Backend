@@ -19,6 +19,11 @@ const PREDICTION_TO_SPECIALTY: Record<string, Specialty | null> = {
   full_stack: 'FULLSTACK',
   qa: null,
   cybersecurity: 'CYBERSECURITY',
+  bi: 'BI',
+  data_engineer: 'DATA',
+  business_analyst: 'BI',
+  project_manager: null,
+  mobile: 'MOBILE',
 };
 
 @Injectable()

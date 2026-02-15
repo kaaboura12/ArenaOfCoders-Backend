@@ -32,7 +32,10 @@ export class AuthService {
       this.config.get<string>('JWT_EXPIRES_IN', '7d');
   }
 
-  async signUp(dto: SignUpDto): Promise<{ user: AuthUser; tokens: AuthTokens }> {
+  async signUp(
+    dto: SignUpDto,
+    resumeBuffer: Buffer,
+  ): Promise<{ user: AuthUser; tokens: AuthTokens }> {
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
     const user = await this.userService.create({
       email: dto.email,
@@ -41,21 +44,31 @@ export class AuthService {
       lastName: dto.lastName.trim(),
       role: UserRole.USER,
     });
-    
-    // Send verification code via email
+
+    if (resumeBuffer?.length) {
+      const extraction = await this.cvExtractionService.extractFromBuffer(resumeBuffer);
+      const updateDto: UpdateProfileDto = {};
+      if (extraction.mainSpecialty != null) updateDto.mainSpecialty = extraction.mainSpecialty as Specialty;
+      if (extraction.skillTags.length > 0) updateDto.skillTags = extraction.skillTags;
+      if (Object.keys(updateDto).length > 0) {
+        await this.userService.updateProfile(user.id, updateDto);
+      }
+    }
+
     await this.emailVerificationService.sendVerificationCode(
       user.email,
       user.firstName,
     );
-    
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
     };
     const tokens = this.issueTokens(payload);
+    const finalUser = await this.userService.findById(user.id);
     return {
-      user: this.toAuthUser(user),
+      user: this.toAuthUser(finalUser ?? user),
       tokens,
     };
   }
