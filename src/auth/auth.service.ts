@@ -8,10 +8,11 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { EmailVerificationService } from '../email-verification/email-verification.service';
+import { CvExtractionService } from '../cv-extraction/cv-extraction.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { AuthTokens, AuthUser, JwtPayload } from './auth.types';
-import { UserRole } from '@prisma/client';
+import { UserRole, Specialty } from '@prisma/client';
 import type { UpdateProfileDto } from '../user/dto/update-profile.dto';
 
 const SALT_ROUNDS = 12;
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly cvExtractionService: CvExtractionService,
   ) {
     this.jwtExpiresIn =
       this.config.get<string>('JWT_EXPIRES_IN', '7d');
@@ -143,6 +145,20 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
+    return this.userService.updateProfile(userId, dto);
+  }
+
+  /**
+   * Upload resume (.docx), run CV extraction via Hugging Face, then update user's mainSpecialty and skillTags.
+   */
+  async uploadCvAndUpdateProfile(
+    userId: string,
+    buffer: Buffer,
+  ) {
+    const extraction = await this.cvExtractionService.extractFromBuffer(buffer);
+    const dto: UpdateProfileDto = {};
+    if (extraction.mainSpecialty != null) dto.mainSpecialty = extraction.mainSpecialty as Specialty;
+    if (extraction.skillTags.length > 0) dto.skillTags = extraction.skillTags;
     return this.userService.updateProfile(userId, dto);
   }
 }
