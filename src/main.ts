@@ -22,6 +22,7 @@ async function bootstrap() {
       'access-token',
     )
     .addTag('auth', 'Sign up, sign in, email verification, and profile (me, update profile)')
+    .addTag('submission', 'Create and manage challenge submissions')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

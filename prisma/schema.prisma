@@ -31,49 +31,55 @@ enum Specialty {
   DEVOPS
 }
 
-model User {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  
-  // ───── Authentication ─────
-  email           String   @unique
-  passwordHash    String
-  isEmailVerified Boolean  @default(false)
+enum SubmissionStatus {
+  PENDING
+  ANALYZING
+  DONE
+}
 
-  role            UserRole @default(USER)
+model User {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // ───── Authentication ─────
+  email           String  @unique
+  passwordHash    String
+  isEmailVerified Boolean @default(false)
+
+  role UserRole @default(USER)
 
   // ───── Basic Identity ─────
-  firstName       String
-  lastName        String
-  avatarUrl       String?
+  firstName String
+  lastName  String
+  avatarUrl String?
 
   // ───── CV & AI Classification ─────
-  cvUrl           String?         // Stored CV file
-  mainSpecialty   Specialty?      // Result of AI classification
-  skillTags       String[]        // ["nestjs", "react", "flutter"]
+  cvUrl         String? // Stored CV file
+  mainSpecialty Specialty? // Result of AI classification
+  skillTags     String[] // ["nestjs", "react", "flutter"]
 
   // ───── Trust & Performance ─────
 
-  totalChallenges Int     @default(0)
-  totalWins       Int     @default(0)
+  totalChallenges Int @default(0)
+  totalWins       Int @default(0)
 
   // ───── Wallet ─────
-  walletBalance   Float   @default(0)
+  walletBalance Float @default(0)
 
   // ───── Status ─────
-  isBanned        Boolean @default(false)
-  bannedReason    String?
+  isBanned     Boolean @default(false)
+  bannedReason String?
 
   // ───── Relations ─────
   //rooms           RoomParticipant[]
   //submissions     Submission[]
   //rewards         Reward[]
-  
+
   //companyProfile  Company?         @relation(fields: [companyId], references: [id])
   //companyId       String?
 
   // ───── Metadata ─────
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([role])
   @@index([mainSpecialty])
@@ -82,10 +88,23 @@ model User {
 model EmailVerification {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String
-  code      String   // 6-digit verification code
+  code      String // 6-digit verification code
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([email])
   @@index([code])
+}
+
+model Submission {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  teamName  String
+  githubUrl String
+  status    SubmissionStatus @default(PENDING)
+  score     Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
 }
